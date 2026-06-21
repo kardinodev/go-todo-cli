@@ -15,9 +15,16 @@ type User struct {
 }
 
 type Task struct {
+	ID       int
+	Title    string
+	DueDate  time.Time
+	Category string
+	IsDone   bool
+	UserID   int
 }
 
 // global
+var taskStorage []Task
 var userStorage []User
 var authenticatedUser *User
 
@@ -67,13 +74,12 @@ func createTask() {
 	if authenticatedUser != nil {
 		authenticatedUser.Print()
 	}
-
 	scanner := bufio.NewScanner(os.Stdin)
-	var name, duedate, category string
+	var title, duedate, category string
 
 	fmt.Println("please enter the task title")
 	scanner.Scan()
-	name = scanner.Text()
+	title = scanner.Text()
 
 	fmt.Println("please enter the task category")
 	scanner.Scan()
@@ -83,7 +89,20 @@ func createTask() {
 	scanner.Scan()
 	duedate = scanner.Text()
 
-	fmt.Println("task", name, category, duedate)
+	if authenticatedUser != nil {
+		task := Task{
+			ID:       len(taskStorage) + 1,
+			Title:    title,
+			DueDate:  duedate,
+			Category: category,
+			IsDone:   false,
+			UserID:   authenticatedUser.ID,
+		}
+	}
+	taskStorage = append(taskStorage, task)
+}
+
+// fmt.Println("task", name, category, duedate)
 }
 
 func createCategory() {
