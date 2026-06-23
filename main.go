@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	//"time"
 )
 
 type User struct {
@@ -15,9 +16,10 @@ type User struct {
 }
 
 type Task struct {
-	ID       int
-	Title    string
-	DueDate  time.Time
+	ID    int
+	Title string
+	//DueDate  time.Time
+	DueDate  string
 	Category string
 	IsDone   bool
 	UserID   int
@@ -49,6 +51,10 @@ func main() {
 func runCommand(command string) {
 	if command != "register-user" && command != "exit" && authenticatedUser == nil {
 		login()
+
+		if authenticatedUser == nil {
+			return
+		}
 	}
 	switch command {
 	case "create-task":
@@ -70,10 +76,8 @@ func runCommand(command string) {
 func (u User) Print() {
 	fmt.Println("User: ", u.ID, u.Email, u.Name)
 }
+
 func createTask() {
-	if authenticatedUser != nil {
-		authenticatedUser.Print()
-	}
 	scanner := bufio.NewScanner(os.Stdin)
 	var title, duedate, category string
 
@@ -89,20 +93,15 @@ func createTask() {
 	scanner.Scan()
 	duedate = scanner.Text()
 
-	if authenticatedUser != nil {
-		task := Task{
-			ID:       len(taskStorage) + 1,
-			Title:    title,
-			DueDate:  duedate,
-			Category: category,
-			IsDone:   false,
-			UserID:   authenticatedUser.ID,
-		}
+	task := Task{
+		ID:       len(taskStorage) + 1,
+		Title:    title,
+		DueDate:  duedate,
+		Category: category,
+		IsDone:   false,
+		UserID:   authenticatedUser.ID,
 	}
 	taskStorage = append(taskStorage, task)
-}
-
-// fmt.Println("task", name, category, duedate)
 }
 
 func createCategory() {
