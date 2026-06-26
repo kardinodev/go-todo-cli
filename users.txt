@@ -1,2 +1,0 @@
-id: 1, name: saeed, email: ss@ss, password: ss
-id: 2, name: david, email: dd@Dd, password: dd

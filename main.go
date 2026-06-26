@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -35,20 +36,36 @@ type Category struct {
 }
 
 // global
-var taskStorage []Task
-var userStorage []User
-var categoryStorage []Category
-var authenticatedUser *User
+var (
+	taskStorage     []Task
+	userStorage     []User
+	categoryStorage []Category
 
-const userStoragePath string = "users.txt"
+	authenticatedUser *User
+	serializationMode string
+)
+
+const (
+	userStoragePath         string = "users.txt"
+	CustomSerializationMode string = "custom"
+	JsonSerializationMode   string = "Json"
+)
 
 func main() {
 	// load data
 	leadUserStorageFromFile()
 	fmt.Println("Hello to TODO app")
 
+	serializeMode := flag.String("serialize-mode", CustomSerializationMode, "serialization mode")
 	command := flag.String("command", "no-command", "command to run")
 	flag.Parse()
+
+	switch *serializeMode {
+	case CustomSerializationMode:
+		serializationMode = CustomSerializationMode
+	case JsonSerializationMode:
+		serializationMode = JsonSerializationMode
+	}
 
 	for {
 		runCommand(*command)
@@ -255,16 +272,30 @@ func registerUser() {
 	}
 
 	userStorage = append(userStorage, user)
+	writeUserToFile(user)
+}
+
+func writeUserToFile(user User) {
 	file, err := os.OpenFile(userStoragePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
 		fmt.Println("can't open the user.txt file", err)
 		return
 	}
-	data := fmt.Sprintf("id: %d, name: %s, email: %s, password: %s\n", user.ID, user.Name, user.Email, user.Password)
-	b := []byte(data)
-	file.Write(b)
+	defer file.Close()
 
-	file.Close()
+	var data []byte
+	var jErr error
+
+	if serializationMode == CustomSerializationMode {
+		data = []byte(fmt.Sprintf("id: %d, name: %s, email: %s, password: %s\n", user.ID, user.Name, user.Email, user.Password))
+	} else if serializationMode == JsonSerializationMode {
+		data, jErr = json.Marshal(user)
+		if jErr != nil {
+			fmt.Println("can't marshal user struct to json", jErr)
+			return
+		}
+	}
+	file.Write(data)
 }
 
 func login() {
