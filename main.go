@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -67,6 +68,8 @@ func main() {
 		serializationMode = JsonSerializationMode
 	}
 
+	fmt.Println(serializationMode)
+
 	for {
 		runCommand(*command)
 		scanner := bufio.NewScanner(os.Stdin)
@@ -122,48 +125,75 @@ func leadUserStorageFromFile() {
 			dataStr := string(data)
 			dataStr = strings.Trim(dataStr, "\n")
 			dataList := strings.Split(dataStr, "\n")
+
 			for _, item := range dataList {
-				if item == "" {
-					continue
-				}
-				// fmt.Printf("[%d (len:%d)]: %s\n", index, len(item), item)
-				itemList := strings.Split(item, ",")
-
-				user := User{}
-				isValidRecord := true
-				for _, field := range itemList {
-					values := strings.Split(field, ": ")
-					if len(values) != 2 {
-						fmt.Println("record is not vaild")
-						isValidRecord = false
-						break
+				var userStruct = User{}
+				switch serializationMode {
+				case CustomSerializationMode:
+					var dErr error
+					userStruct, dErr = descrilizeFromCustome(item)
+					if dErr != nil {
+						fmt.Println("can't deserialize user record to user struct", dErr)
+						return
 					}
-					fieldName := strings.TrimSpace(values[0])
-					fieldValue := strings.TrimSpace(values[1])
-
-					switch fieldName {
-					case "id":
-						id, err := strconv.Atoi(fieldValue)
-						if err != nil {
-							fmt.Println("strconv failed.", err)
-							return
-						}
-						user.ID = id
-					case "name":
-						user.Name = fieldValue
-					case "email":
-						user.Email = fieldValue
-					case "password":
-						user.Password = fieldValue
+				case JsonSerializationMode:
+					uErr := json.Unmarshal([]byte(item), &userStruct)
+					if uErr != nil {
+						fmt.Println("can't deserialize user record to user struct from json mode", uErr)
+						return
 					}
 				}
-				if isValidRecord {
-					userStorage = append(userStorage, user)
-				}
+				userStorage = append(userStorage, userStruct)
+				fmt.Println()
 			}
-			file.Close()
-			fmt.Println(userStorage)
 		}
+	}
+	file.Close()
+	fmt.Println(userStorage)
+}
+
+func descrilizeFromCustome(item string) (User, error) {
+	if item == "" {
+		err := errors.New("User string is empty, ")
+		return User{}, err
+	}
+	// fmt.Printf("[%d (len:%d)]: %s\n", index, len(item), item)
+	itemList := strings.Split(item, ",")
+
+	user := User{}
+	isValidRecord := true
+	for _, field := range itemList {
+		values := strings.Split(field, ": ")
+		if len(values) != 2 {
+			fmt.Println("record is not vaild")
+			isValidRecord = false
+			break
+		}
+		fieldName := strings.TrimSpace(values[0])
+		fieldValue := strings.TrimSpace(values[1])
+
+		switch fieldName {
+		case "id":
+			id, err := strconv.Atoi(fieldValue)
+			if err != nil {
+				fmt.Println("strconv failed.", err)
+
+				return User{}, errors.New("strconv failed")
+			}
+			user.ID = id
+		case "name":
+			user.Name = fieldValue
+		case "email":
+			user.Email = fieldValue
+		case "password":
+			user.Password = fieldValue
+		}
+	}
+	if isValidRecord {
+		// userStorage = append(userStorage, user)
+		return user, nil
+	} else {
+		return User{}, errors.New("record is not vaild")
 	}
 }
 
