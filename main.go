@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -9,7 +11,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	//"time"
 )
 
 type User struct {
@@ -135,6 +136,10 @@ func leadUserStorageFromFile() {
 						return
 					}
 				case JsonSerializationMode:
+					if item[0] != '{' && item[len(item)-1] != '}' {
+						continue
+					}
+
 					uErr := json.Unmarshal([]byte(item), &userStruct)
 					if uErr != nil {
 						fmt.Println(item)
@@ -287,6 +292,8 @@ func registerUser() {
 	scanner.Scan()
 	password = scanner.Text()
 
+	hashedPassword := getMD5Hash(password)
+
 	id = email
 
 	fmt.Println("user;", id, email, password)
@@ -295,7 +302,7 @@ func registerUser() {
 		ID:       len(userStorage) + 1,
 		Name:     name,
 		Email:    email,
-		Password: password,
+		Password: hashedPassword,
 	}
 
 	userStorage = append(userStorage, user)
@@ -328,7 +335,7 @@ func writeUserToFile(user User) {
 }
 
 func login() {
-	// get user authh
+	// get user auth
 	scanner := bufio.NewScanner(os.Stdin)
 	var username, password string
 
@@ -339,9 +346,10 @@ func login() {
 	fmt.Println("please enter your password")
 	scanner.Scan()
 	password = scanner.Text()
+	hashedPassword := getMD5Hash(password)
 
 	for _, user := range userStorage {
-		if user.Email == username && user.Password == password {
+		if user.Email == username && user.Password == hashedPassword {
 			authenticatedUser = &user
 			fmt.Println("You'r Logged in")
 
@@ -353,4 +361,9 @@ func login() {
 	if authenticatedUser == nil {
 		fmt.Println("Your authentication is faild.")
 	}
+}
+
+func getMD5Hash(text string) string {
+	hash := md5.Sum([]byte(text))
+	return hex.EncodeToString(hash[:])
 }
