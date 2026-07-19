@@ -54,7 +54,6 @@ const (
 
 func main() {
 	// load data
-	leadUserStorageFromFile()
 	fmt.Println("Hello to TODO app")
 
 	serializeMode := flag.String("serialize-mode", CustomSerializationMode, "serialization mode")
@@ -67,8 +66,7 @@ func main() {
 	case JsonSerializationMode:
 		serializationMode = JsonSerializationMode
 	}
-
-	fmt.Println(serializationMode)
+	leadUserStorageFromFile()
 
 	for {
 		runCommand(*command)
@@ -139,17 +137,16 @@ func leadUserStorageFromFile() {
 				case JsonSerializationMode:
 					uErr := json.Unmarshal([]byte(item), &userStruct)
 					if uErr != nil {
+						fmt.Println(item)
 						fmt.Println("can't deserialize user record to user struct from json mode", uErr)
 						return
 					}
 				}
 				userStorage = append(userStorage, userStruct)
-				fmt.Println()
 			}
 		}
 	}
 	file.Close()
-	fmt.Println(userStorage)
 }
 
 func descrilizeFromCustome(item string) (User, error) {
@@ -324,6 +321,8 @@ func writeUserToFile(user User) {
 			fmt.Println("can't marshal user struct to json", jErr)
 			return
 		}
+
+		data = append(data, []byte("\n")...)
 	}
 	file.Write(data)
 }
